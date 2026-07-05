@@ -180,3 +180,81 @@ placeholder="Example:\nLooking for a Data Scientist with Python, SQL, Machine Le
 )
 
 screen = st.button("🚀 Screen Resumes")
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+skills = [
+    "python","java","sql","machine learning","deep learning",
+    "data science","nlp","tensorflow","pandas","numpy",
+    "power bi","excel","tableau","aws","azure","docker",
+    "flask","django","react","javascript","html","css"
+]
+
+if screen:
+
+    if job_description.strip() == "":
+        st.warning("Please enter a Job Description.")
+        st.stop()
+
+    # Clean Job Description
+    clean_jd = clean_text(job_description)
+
+    # TF-IDF
+    vectorizer = TfidfVectorizer()
+
+    vectors = vectorizer.fit_transform(
+        df["cleaned_resume"].tolist() + [clean_jd]
+    )
+
+    similarity = cosine_similarity(vectors[-1], vectors[:-1]).flatten()
+
+    df["ATS Score"] = (similarity * 100).round(2)
+
+    ranked = df.sort_values("ATS Score", ascending=False)
+
+    # Missing Skills
+    def missing(resume):
+
+        resume = resume.lower()
+
+        miss = []
+
+        for skill in skills:
+            if skill not in resume and skill in clean_jd:
+                miss.append(skill)
+
+        return ", ".join(miss) if miss else "None"
+
+    ranked["Missing Skills"] = ranked["Resume_str"].apply(missing)
+
+    st.success("Resume Screening Completed Successfully!")
+
+    st.subheader("🏆 Top 10 Candidates")
+
+    st.dataframe(
+        ranked[
+            ["Category","ATS Score","Missing Skills"]
+        ].head(10)
+    )
+
+    st.bar_chart(
+        ranked.head(10).set_index("Category")["ATS Score"]
+    )
+
+    st.download_button(
+        "📥 Download Ranking",
+        ranked.to_csv(index=False),
+        file_name="ranked_candidates.csv",
+        mime="text/csv"
+    )
+
+    st.markdown("---")
+
+    st.subheader("📈 Business Insights")
+
+    st.write("""
+- AI automatically ranks resumes.
+- Higher ATS Score indicates a better match.
+- Missing skills highlight candidate gaps.
+- Recruiters can shortlist candidates much faster.
+""")
