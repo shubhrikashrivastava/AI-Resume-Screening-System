@@ -113,4 +113,4 @@ streamlit run app.py
 
 **Shubhrika Shrivastava**
 
-Future Interns – Machine Learning Internship
+
